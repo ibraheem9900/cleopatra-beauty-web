@@ -49,10 +49,6 @@ body {
   font-family: var(--font-sans), system-ui, sans-serif;
 }
 
-/* Bottom-nav safe-area helper (iPhone home indicator etc.) */
-.pb-safe {
-  padding-bottom: env(safe-area-inset-bottom);
-}
 
 /* Custom scrollbar */
 ::-webkit-scrollbar {
