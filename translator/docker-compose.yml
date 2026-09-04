@@ -1,0 +1,23 @@
+# Self-hosted LibreTranslate for the Cleopatra live-translation system.
+# Run from the translator/ directory:
+#   docker compose up -d
+# Then set LIBRETRANSLATE_URL=http://localhost:5000 in .env.local
+#
+# First request downloads translation models (~300 MB) — subsequent requests are fast.
+# Supports en, de, et, ru out of the box (Argos Translate / NLLB).
+
+services:
+  libretranslate:
+    image: libretranslate/libretranslate:latest
+    container_name: cleopatra-translator
+    ports:
+      - "5000:5000"
+    restart: unless-stopped
+    environment:
+      - LT_LOAD_ONLY=en,de,et,ru
+      - LT_API_KEYS=false
+    volumes:
+      - lt-models:/home/libretranslate/.local/share/argos-translate
+
+volumes:
+  lt-models:

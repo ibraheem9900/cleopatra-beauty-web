@@ -1,0 +1,102 @@
+@import "tailwindcss";
+
+:root {
+  --background: #FDFBF7;
+  --foreground: #2D2A26;
+  --cream: #FDFBF7;
+  --cream-dark: #F5F0E8;
+  --gold: #C4A35A;
+  --gold-light: #D4B86A;
+  --gold-dark: #A68942;
+  --botanical: #6B7F5E;
+  --botanical-light: #8FA37E;
+  --botanical-dark: #4E5E44;
+  --warm-brown: #8B7355;
+  --warm-beige: #E8E0D4;
+  --muted: #7A7268;
+  --card: #FFFFFF;
+  --border: #E8E0D4;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-cream: var(--cream);
+  --color-cream-dark: var(--cream-dark);
+  --color-gold: var(--gold);
+  --color-gold-light: var(--gold-light);
+  --color-gold-dark: var(--gold-dark);
+  --color-botanical: var(--botanical);
+  --color-botanical-light: var(--botanical-light);
+  --color-botanical-dark: var(--botanical-dark);
+  --color-warm-brown: var(--warm-brown);
+  --color-warm-beige: var(--warm-beige);
+  --color-muted: var(--muted);
+  --color-card: var(--card);
+  --color-border: var(--border);
+  --font-serif: var(--font-playfair);
+  --font-sans: var(--font-inter);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--cream-dark);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--warm-beige);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
+}
+
+/* Lenis handles smooth scroll, so we remove native smooth-scroll */
+html.lenis, html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+/* Interactive element micro-interactions */
+button, a, [role="button"] {
+  transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Focus-visible for accessibility */
+:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Selection color */
+::selection {
+  background-color: var(--gold);
+  color: white;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .lenis { display: none !important; }
+}
