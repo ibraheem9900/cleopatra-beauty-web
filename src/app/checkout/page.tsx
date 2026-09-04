@@ -391,7 +391,7 @@ export default function CheckoutPage() {
             <div className="lg:col-span-1">
               <div className="sticky top-24 bg-white rounded-2xl border border-warm-beige/30 p-6 space-y-4">
                 <h3 className="font-serif text-lg text-foreground">{t("checkout.orderSummary")}</h3>
-                <div className="space-y-3 max-h-48 overflow-y-auto">
+                <div className="space-y-3 max-h-48 overflow-y-auto" data-lenis-prevent>
                   {items.map((item) => (
                     <div key={item.product.id} className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-cream-dark rounded-lg overflow-hidden relative flex-shrink-0">

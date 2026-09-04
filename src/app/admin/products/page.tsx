@@ -315,6 +315,7 @@ function ProductForm({
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="fixed inset-0 bg-black/50 flex items-start justify-center z-[80] p-4 pt-8 overflow-y-auto"
+      data-lenis-prevent
       onClick={onClose}
     >
       <motion.div
@@ -331,7 +332,7 @@ function ProductForm({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-5 max-h-[70vh] overflow-y-auto">
+        <form onSubmit={handleSubmit} className="p-6 space-y-5 max-h-[70vh] overflow-y-auto" data-lenis-prevent>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Product Name *</label>

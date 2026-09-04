@@ -56,7 +56,11 @@ function HeroSection() {
   const opacity = useTransform(scrollYProgress, [0, 0.5], [1, 0.5]);
   const imageScale = useTransform(scrollYProgress, [0, 1], [1, 1.08]);
 
-  return (            <section ref={ref} className="relative h-[70vh] sm:h-[85vh] min-h-[500px] max-h-[900px] overflow-hidden">
+  return (
+    <section
+      ref={ref}
+      className="relative overflow-hidden sm:h-[85vh] sm:min-h-[560px] sm:max-h-[900px]"
+    >
       {/* Hero background image — full width with parallax */}
       <motion.div
         style={shouldReduceMotion ? {} : { y, opacity }}
@@ -67,22 +71,25 @@ function HeroSection() {
             src="/images/hero.png"
             alt="Cleopatra beauty products collection"
             fill
-            className="object-cover object-right"
+            className="object-cover object-right sm:object-center"
             priority
             sizes="100vw"
             quality={90}
           />
         </motion.div>
-        {/* Left gradient overlay for text readability */}
-        <div className="absolute inset-0 bg-gradient-to-r from-cream/95 via-cream/80 sm:from-cream/90 sm:via-cream/60 to-transparent" />
+        {/* Readability overlay — near-solid cream behind the text on mobile,
+            softer gradient on desktop where the image has empty space on the left */}
+        <div className="absolute inset-0 bg-gradient-to-r from-cream via-cream/90 sm:from-cream/90 sm:via-cream/60 to-transparent" />
+        {/* Top scrim under the fixed header on mobile */}
+        <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-cream to-transparent sm:hidden" />
         {/* Bottom gradient */}
-        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-cream to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 h-24 sm:h-32 bg-gradient-to-t from-cream to-transparent" />
       </motion.div>
 
-      {/* Content — positioned on the LEFT side */}
-      <div className="relative z-10 h-full flex items-center">
+      {/* Content — content-driven height on mobile, vertically centered on desktop */}
+      <div className="relative z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-          <div className="max-w-xl lg:max-w-2xl">
+          <div className="max-w-xl lg:max-w-2xl pt-24 pb-14 sm:pt-0 sm:pb-0 sm:h-[85vh] sm:min-h-[560px] sm:max-h-[900px] sm:flex sm:flex-col sm:justify-center">
             <motion.div
               initial={shouldReduceMotion ? {} : { opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
@@ -100,7 +107,7 @@ function HeroSection() {
               initial={shouldReduceMotion ? {} : { opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
-              className="font-serif text-[1.25rem] leading-[1.2] text-foreground mb-3 sm:mb-6 sm:text-3xl md:text-5xl lg:text-7xl break-words"
+              className="font-serif text-[clamp(1.75rem,8.5vw,2.5rem)] sm:text-3xl md:text-5xl lg:text-7xl font-bold leading-[1.15] text-foreground mb-3 sm:mb-6 break-words [text-shadow:0_1px_2px_rgba(253,251,247,0.8)] sm:[text-shadow:none]"
             >
               {(() => {
                 const tagline = t("hero.tagline");
@@ -109,8 +116,8 @@ function HeroSection() {
                   return (
                     <>
                       {tagline.slice(0, commaIndex + 1)}
-                      <br className="hidden sm:block" />
-                      <span className="text-gold">{tagline.slice(commaIndex + 1).trim()}</span>
+                      <br />
+                      <span className="text-gold-dark sm:text-gold">{tagline.slice(commaIndex + 1).trim()}</span>
                     </>
                   );
                 }
@@ -122,7 +129,7 @@ function HeroSection() {
               initial={shouldReduceMotion ? {} : { opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
-              className="text-sm sm:text-base md:text-lg text-muted leading-relaxed mb-6 sm:mb-8 max-w-lg"
+              className="text-[0.95rem] sm:text-base md:text-lg text-muted leading-relaxed mb-6 sm:mb-8 max-w-lg [text-shadow:0_1px_2px_rgba(253,251,247,0.8)] sm:[text-shadow:none]"
             >
               {t("hero.subtitle")}
             </motion.p>
@@ -131,18 +138,18 @@ function HeroSection() {
               initial={shouldReduceMotion ? {} : { opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.45, ease: [0.22, 1, 0.36, 1] }}
-              className="flex flex-col sm:flex-row gap-3"
+              className="flex flex-col sm:flex-row gap-3 sm:gap-4"
             >
               <Link
                 href="/catalog"
-                className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-gold hover:bg-gold-light text-foreground font-medium rounded-full transition-all duration-300 hover:shadow-lg hover:shadow-gold/20 hover:scale-[1.02] active:scale-[0.98] group"
+                className="inline-flex items-center justify-center gap-2 w-full sm:w-auto px-6 sm:px-8 py-3.5 sm:py-4 min-h-12 sm:min-h-0 bg-gold hover:bg-gold-light text-foreground font-medium rounded-full transition-all duration-300 hover:shadow-lg hover:shadow-gold/20 hover:scale-[1.02] active:scale-[0.98] group"
               >
                 {t("hero.shopNow")}
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Link>
               <Link
                 href="/about"
-                className="inline-flex items-center justify-center gap-2 px-8 py-4 border border-foreground/20 hover:border-gold text-foreground/80 hover:text-gold font-medium rounded-full transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
+                className="inline-flex items-center justify-center gap-2 w-full sm:w-auto px-6 sm:px-8 py-3.5 sm:py-4 min-h-12 sm:min-h-0 border border-foreground/25 hover:border-gold bg-cream/60 backdrop-blur-sm text-foreground/90 hover:text-gold font-medium rounded-full transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
               >
                 {t("hero.cta")}
               </Link>

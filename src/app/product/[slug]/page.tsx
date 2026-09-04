@@ -330,12 +330,12 @@ function ProductDetail({ slug }: { slug: string }) {
 
                 {/* Tabs */}
                 <div className="pt-4 border-t border-warm-beige/50">
-                  <div className="flex gap-1 bg-cream-dark rounded-xl p-1 mb-6">
+                  <div className="flex flex-wrap gap-1 bg-cream-dark rounded-xl p-1 mb-6">
                     {tabs.map((tab) => (
                       <button
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id)}
-                        className={`flex-1 py-2.5 px-3 text-xs sm:text-sm font-medium rounded-lg transition-all ${
+                        className={`flex-1 min-w-0 py-2.5 px-2 sm:px-3 text-xs sm:text-sm font-medium rounded-lg transition-all ${
                           activeTab === tab.id
                             ? "bg-white text-foreground shadow-sm"
                             : "text-muted hover:text-foreground"

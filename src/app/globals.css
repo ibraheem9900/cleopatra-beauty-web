@@ -38,10 +38,20 @@
   --font-sans: var(--font-inter);
 }
 
+html {
+  /* Remove the grey/blue tap flash on mobile browsers */
+  -webkit-tap-highlight-color: transparent;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+/* Bottom-nav safe-area helper (iPhone home indicator etc.) */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 /* Custom scrollbar */
@@ -98,5 +108,5 @@ button, a, [role="button"] {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
-  .lenis { display: none !important; }
 }
+
