@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Playfair_Display, Inter } from "next/font/google";
 import SmoothScroll from "@/components/ui/SmoothScroll";
+import PageTransitionLoader from "@/components/ui/PageTransitionLoader";
 import "./globals.css";
 
 const playfair = Playfair_Display({
@@ -37,6 +39,9 @@ export default function RootLayout({
     <html lang="en" className={`${playfair.variable} ${inter.variable}`}>
       <body className="min-h-screen bg-cream text-foreground font-sans antialiased">
         <SmoothScroll>{children}</SmoothScroll>
+        <Suspense fallback={null}>
+          <PageTransitionLoader />
+        </Suspense>
       </body>
     </html>
   );
