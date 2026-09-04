@@ -193,6 +193,7 @@ export default function AdminOrdersPage() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/50 flex items-start justify-center z-[80] p-4 pt-8 overflow-y-auto"
+            data-lenis-prevent
             onClick={() => setSelectedOrder(null)}
           >
             <motion.div

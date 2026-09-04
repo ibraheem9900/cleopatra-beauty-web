@@ -116,7 +116,7 @@ function CatalogContent() {
               {/* Mobile filter toggle */}
               <button
                 onClick={() => setFilterOpen(true)}
-                className="lg:hidden flex items-center gap-2 px-4 py-2.5 bg-white border border-warm-beige rounded-lg text-sm text-foreground hover:border-gold/50 transition-colors"
+                className="lg:hidden flex items-center gap-2 px-4 py-3 min-h-11 bg-white border border-warm-beige rounded-lg text-sm text-foreground hover:border-gold/50 transition-colors"
               >
                 <SlidersHorizontal className="w-4 h-4" />
                 {t("catalog.filter")}
@@ -319,6 +319,7 @@ function CatalogContent() {
               exit={{ x: "100%" }}
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
               className="fixed top-0 right-0 bottom-0 w-80 max-w-[85vw] bg-white z-[70] shadow-2xl overflow-y-auto"
+              data-lenis-prevent
             >
               <div className="flex items-center justify-between p-6 border-b border-warm-beige/50">
                 <h3 className="font-serif text-xl text-foreground">{t("catalog.filter")}</h3>
