@@ -202,8 +202,6 @@ export default function Footer() {
         </div>
       </div>
 
-      {/* Spacer so the mobile bottom nav never covers footer content */}
-      <div className="h-16 lg:hidden" aria-hidden="true" />
     </footer>
   );
 }
