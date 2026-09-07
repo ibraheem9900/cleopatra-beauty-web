@@ -344,17 +344,22 @@ export default function CheckoutPage() {
 
                       {stripeConfig === null ? (
                         <div className="p-4 bg-cream rounded-xl text-sm text-muted">Loading payment methods…</div>
-                      ) : stripeConfig.configured && stripeConfig.clientSecret ? (
-                        <StripeElementsWrap clientSecret={stripeConfig.clientSecret} />
+                      ) : stripeConfig.configured ? (
+                        stripeConfig.clientSecret ? (
+                          <StripeElementsWrap clientSecret={stripeConfig.clientSecret} />
+                        ) : (
+                          <div className="p-4 rounded-xl border border-amber-200 bg-amber-50 text-sm text-amber-800 flex gap-2">
+                            <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                            <span>
+                              Could not load payment form. Please try again or use a different payment method.
+                            </span>
+                          </div>
+                        )
                       ) : (
                         <div className="p-4 rounded-xl border border-amber-200 bg-amber-50 text-sm text-amber-800 flex gap-2">
                           <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
                           <span>
-                            Stripe is not configured yet. This checkout is running in{" "}
-                            <strong>development mode</strong> — no real payment will be charged. Add{" "}
-                            <code className="bg-amber-100 px-1 rounded">STRIPE_SECRET_KEY</code> and{" "}
-                            <code className="bg-amber-100 px-1 rounded">NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY</code>{" "}
-                            to enable real card payments.
+                            Stripe is not configured on this deployment. Add <code className="bg-amber-100 px-1 rounded">STRIPE_SECRET_KEY</code> and <code className="bg-amber-100 px-1 rounded">NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY</code> to Vercel environment variables to enable real card payments.
                           </span>
                         </div>
                       )}
@@ -440,8 +445,54 @@ function StripeElementsWrap({ clientSecret }: { clientSecret: string }) {
   const [stripePromise] = useState<Promise<Stripe | null>>(() =>
     loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || "")
   );
+
+  // Brand-aligned appearance config for the Stripe card form
+  const appearance = {
+    theme: "stripe" as const,
+    variables: {
+      colorPrimary: "#92651f", // gold brand color
+      colorBackground: "#ffffff",
+      colorText: "#1a1a1a",
+      colorDanger: "#dc2626",
+      fontFamily: "Georgia, 'Times New Roman', serif",
+      spacingUnit: "8px",
+      borderRadius: "12px",
+    },
+    rules: {
+      ".Input": {
+        border: "1px solid #e0d5c1",
+        padding: "14px 16px",
+        fontSize: "15px",
+        boxShadow: "none",
+      },
+      ".Input:focus": {
+        border: "1px solid #92651f",
+        boxShadow: "0 0 0 1px rgba(146, 101, 31, 0.15)",
+      },
+      ".Label": {
+        fontSize: "13px",
+        fontWeight: "500",
+        color: "#666666",
+      },
+      ".Tab.content.active": {
+        borderBottom: "2px solid #92651f",
+      },
+      ".Tab.label": {
+        fontWeight: "500",
+      },
+      ".Message.error": {
+        background: "#fef2f2",
+        color: "#991b1b",
+        border: "1px solid #fecaca",
+        borderRadius: "10px",
+        padding: "10px 14px",
+        fontSize: "14px",
+      },
+    },
+  } as any;
+
   return (
-    <Elements stripe={stripePromise} options={{ clientSecret } as any}>
+    <Elements stripe={stripePromise} options={{ clientSecret, appearance }}>
       <PaymentElementHost />
     </Elements>
   );
@@ -465,7 +516,16 @@ function PaymentElementHost() {
       stripeConfirmRef = null;
     };
   }, [stripe, elements]);
-  return <PaymentElement options={{ layout: "tabs" }} />;
+  return (
+    <div className="mt-4">
+      <PaymentElement
+        options={{
+          layout: "tabs",
+          totalLabel: "Total due today",
+        }}
+      />
+    </div>
+  );
 }
 
 // Module-level bridge: the Confirm step triggers Stripe confirmation
