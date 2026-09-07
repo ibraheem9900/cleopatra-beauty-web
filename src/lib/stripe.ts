@@ -7,8 +7,26 @@ import { stripeSecretKey, stripeWebhookSecret } from "@/lib/config";
 
 const STRIPE_API = "https://api.stripe.com/v1";
 
-async function stripeFetch(path: string, params: Record<string, string>) {
-  const body = new URLSearchParams(params);
+/**
+ * Flatten a nested object into Stripe's bracket-notation form fields.
+ * { automatic_payment_methods: { enabled: true } }
+ * → automatic_payment_methods[enabled]=true
+ */
+function flattenForStripe(obj: Record<string, any>, prefix = ""): [string, string][] {
+  const entries: [string, string][] = [];
+  for (const [key, value] of Object.entries(obj)) {
+    const fullKey = prefix ? `${prefix}[${key}]` : key;
+    if (value !== null && typeof value === "object" && !Array.isArray(value)) {
+      entries.push(...flattenForStripe(value, fullKey));
+    } else {
+      entries.push([fullKey, String(value)]);
+    }
+  }
+  return entries;
+}
+
+async function stripeFetch(path: string, params: Record<string, any>) {
+  const body = new URLSearchParams(flattenForStripe(params));
   const res = await fetch(`${STRIPE_API}${path}`, {
     method: "POST",
     headers: {
@@ -36,7 +54,7 @@ export async function createPaymentIntent(input: CreatePaymentIntentInput) {
     currency: input.currency.toLowerCase(),
     "metadata[order_ref]": input.metadata.order_ref || "",
     "metadata[email]": input.metadata.email || "",
-    automatic_payment_methods: JSON.stringify({ enabled: true, allow_redirects: "always" }),
+    automatic_payment_methods: { enabled: true, allow_redirects: "always" },
   });
 }
 
