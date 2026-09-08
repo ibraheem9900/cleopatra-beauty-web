@@ -94,6 +94,8 @@
   "checkout.city": "Linn",
   "checkout.postalCode": "Postiindeks",
   "checkout.country": "Riik",
+  "checkout.postalInvalid": "Sisestage oma riigile vastav korrektne postiindeks (nt {example})",
+  "checkout.country": "Riik",
   "checkout.shippingMethod": "Saatmisviis",
   "checkout.paymentMethod": "Makseviis",
   "checkout.reviewOrder": "Vaata tellimus üle",

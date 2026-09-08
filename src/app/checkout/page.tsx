@@ -38,7 +38,122 @@ interface CustomerInfo {
   city: string;
   postalCode: string;
   country: string;
+  countryCode: string; // ISO 3166-1 alpha-2 (passed to Stripe billing details)
 }
+
+// Markets the store ships to (EU focus). Codes are ISO 3166-1 alpha-2.
+const COUNTRIES: { code: string; name: string }[] = [
+  { code: "DE", name: "Germany" },
+  { code: "EE", name: "Estonia" },
+  { code: "LV", name: "Latvia" },
+  { code: "LT", name: "Lithuania" },
+  { code: "FI", name: "Finland" },
+  { code: "SE", name: "Sweden" },
+  { code: "DK", name: "Denmark" },
+  { code: "NL", name: "Netherlands" },
+  { code: "BE", name: "Belgium" },
+  { code: "FR", name: "France" },
+  { code: "ES", name: "Spain" },
+  { code: "IT", name: "Italy" },
+  { code: "AT", name: "Austria" },
+  { code: "IE", name: "Ireland" },
+  { code: "PL", name: "Poland" },
+  { code: "PT", name: "Portugal" },
+  { code: "CZ", name: "Czechia" },
+  { code: "SK", name: "Slovakia" },
+  { code: "HU", name: "Hungary" },
+  { code: "RO", name: "Romania" },
+  { code: "BG", name: "Bulgaria" },
+  { code: "HR", name: "Croatia" },
+  { code: "SI", name: "Slovenia" },
+  { code: "GR", name: "Greece" },
+  { code: "LU", name: "Luxembourg" },
+  { code: "CY", name: "Cyprus" },
+  { code: "MT", name: "Malta" },
+  { code: "CH", name: "Switzerland" },
+  { code: "NO", name: "Norway" },
+  { code: "IS", name: "Iceland" },
+  { code: "GB", name: "United Kingdom" },
+  { code: "US", name: "United States" },
+];
+
+// Per-country postal code formats (light sanity check — catches typos early,
+// while still accepting every valid format for the target markets).
+const POSTAL_PATTERNS: Record<string, RegExp> = {
+  DE: /^\d{5}$/,
+  EE: /^\d{5}$/,
+  LV: /^\d{4}$/,
+  LT: /^(LT-\d{4}|\d{5})$/,
+  FI: /^\d{5}$/,
+  SE: /^\d{3}\s?\d{2}$/,
+  DK: /^\d{4}$/,
+  NL: /^\d{4}\s?[A-Za-z]{2}$/,
+  BE: /^\d{4}$/,
+  FR: /^\d{5}$/,
+  ES: /^\d{5}$/,
+  IT: /^\d{5}$/,
+  AT: /^\d{4}$/,
+  IE: /^[\dA-Za-z][\w\s-]{2,8}$/,
+  PL: /^\d{2}-\d{3}$/,
+  PT: /^\d{4}-?\d{0,3}$/,
+  CZ: /^\d{3}\s?\d{2}$/,
+  SK: /^\d{3}\s?\d{2}$/,
+  HU: /^\d{4}$/,
+  RO: /^\d{6}$/,
+  BG: /^\d{4}$/,
+  HR: /^\d{5}$/,
+  SI: /^\d{4}$/,
+  GR: /^\d{3}\s?\d{2}$/,
+  LU: /^\d{4}$/,
+  CY: /^\d{4}$/,
+  MT: /^[A-Za-z]{3}\s?\d{0,4}$/,
+  CH: /^\d{4}$/,
+  NO: /^\d{4}$/,
+  IS: /^\d{3}$/,
+  GB: /^[A-Za-z]{1,2}\d[A-Za-z\d]?\s?\d[A-Za-z]{2}$/,
+  US: /^\d{5}(-\d{4})?$/,
+};
+
+function isValidPostal(code: string, countryCode: string): boolean {
+  const pattern = POSTAL_PATTERNS[countryCode] || /^[\w][\w\s-]{1,9}$/; // lenient fallback for unlisted countries
+  return pattern.test(code.trim());
+}
+
+// Example postal codes shown in the validation hint (per country).
+const POSTAL_EXAMPLES: Record<string, string> = {
+  DE: "10115",
+  EE: "10111",
+  LV: "LV-1001",
+  LT: "LT-01101",
+  FI: "00100",
+  SE: "114 55",
+  DK: "1050",
+  NL: "1012 AB",
+  BE: "1000",
+  FR: "75001",
+  ES: "28001",
+  IT: "00100",
+  AT: "1010",
+  IE: "D02 XY45",
+  PL: "00-001",
+  PT: "1000-001",
+  CZ: "110 00",
+  SK: "811 01",
+  HU: "1011",
+  RO: "010011",
+  BG: "1000",
+  HR: "10000",
+  SI: "1000",
+  GR: "104 31",
+  LU: "1111",
+  CY: "1010",
+  MT: "VLT 1117",
+  CH: "8001",
+  NO: "0150",
+  IS: "101",
+  GB: "SW1A 1AA",
+  US: "10001",
+};
 
 interface StripeConfig {
   configured: boolean;
@@ -62,7 +177,9 @@ export default function CheckoutPage() {
     city: "",
     postalCode: "",
     country: "Germany",
+    countryCode: "DE",
   });
+  const [postalError, setPostalError] = useState<string | null>(null);
   const [stripeConfig, setStripeConfig] = useState<StripeConfig | null>(null);
   const [placing, setPlacing] = useState(false);
   const [placeError, setPlaceError] = useState<string | null>(null);
@@ -265,13 +382,56 @@ export default function CheckoutPage() {
                         </div>
                         <div>
                           <label className="block text-xs font-medium text-foreground/70 mb-1.5">{t("checkout.postalCode")}</label>
-                          <input type="text" value={customer.postalCode} onChange={(e) => setCustomer({ ...customer, postalCode: e.target.value })} className="w-full px-4 py-3 bg-cream border border-warm-beige rounded-xl text-sm focus:outline-none focus:border-gold/50 focus:ring-1 focus:ring-gold/20 transition-all" />
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            autoComplete="postal-code"
+                            value={customer.postalCode}
+                            onChange={(e) => {
+                              setCustomer({ ...customer, postalCode: e.target.value });
+                              if (postalError) setPostalError(null);
+                            }}
+                            className={`w-full px-4 py-3 bg-cream border rounded-xl text-sm focus:outline-none focus:ring-1 transition-all ${
+                              postalError
+                                ? "border-red-400 focus:border-red-400 focus:ring-red-100"
+                                : "border-warm-beige focus:border-gold/50 focus:ring-gold/20"
+                            }`}
+                          />
+                          {postalError && <p className="text-xs text-red-600 mt-1.5">{postalError}</p>}
                         </div>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-foreground/70 mb-1.5">{t("checkout.country")}</label>
+                        <select
+                          value={customer.countryCode}
+                          onChange={(e) => {
+                            const c = COUNTRIES.find((x) => x.code === e.target.value);
+                            setCustomer({ ...customer, countryCode: e.target.value, country: c ? c.name : customer.country });
+                            if (postalError) setPostalError(null);
+                          }}
+                          className="w-full px-4 py-3 bg-cream border border-warm-beige rounded-xl text-sm focus:outline-none focus:border-gold/50 focus:ring-1 focus:ring-gold/20 transition-all"
+                        >
+                          {COUNTRIES.map((c) => (
+                            <option key={c.code} value={c.code}>
+                              {c.name}
+                            </option>
+                          ))}
+                        </select>
                       </div>
 
                       <motion.button
                         whileTap={{ scale: 0.98 }}
-                        onClick={() => setStep("shipping")}
+                        onClick={() => {
+                          const code = customer.postalCode.trim();
+                          if (!isValidPostal(code, customer.countryCode)) {
+                            setPostalError(
+                              t("checkout.postalInvalid").replace("{example}", POSTAL_EXAMPLES[customer.countryCode] || "12345")
+                            );
+                            return;
+                          }
+                          setPostalError(null);
+                          setStep("shipping");
+                        }}
                         className="w-full py-3.5 bg-gold hover:bg-gold-light text-foreground font-medium rounded-full transition-all text-sm"
                       >
                         {t("checkout.shippingMethod")}
@@ -385,7 +545,21 @@ export default function CheckoutPage() {
                     "Place Order" with the same Elements instance. */}
                 {stripeConfig?.configured && stripeConfig.clientSecret ? (
                   <div className={step === "payment" ? "mt-4" : "hidden"}>
-                    <StripeElementsWrap clientSecret={stripeConfig.clientSecret} />
+                    <StripeElementsWrap
+                      clientSecret={stripeConfig.clientSecret}
+                      billing={{
+                        name: `${customer.firstName} ${customer.lastName}`.trim(),
+                        email: customer.email,
+                        phone: customer.phone || null,
+                        address: {
+                          line1: customer.address,
+                          line2: customer.apartment || null,
+                          city: customer.city,
+                          postal_code: customer.postalCode,
+                          country: customer.countryCode,
+                        },
+                      }}
+                    />
                   </div>
                 ) : null}
 
@@ -451,7 +625,24 @@ export default function CheckoutPage() {
 }
 
 // ---------- Stripe Elements wrapper (real card form when configured) ----------
-function StripeElementsWrap({ clientSecret }: { clientSecret: string }) {
+function StripeElementsWrap({
+  clientSecret,
+  billing,
+}: {
+  clientSecret: string;
+  billing: {
+    name: string;
+    email: string;
+    phone: string | null;
+    address: {
+      line1: string;
+      line2: string | null;
+      city: string;
+      postal_code: string;
+      country: string;
+    };
+  } | null;
+}) {
   const [stripePromise] = useState<Promise<Stripe | null>>(() =>
     loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || "")
   );
@@ -491,13 +682,31 @@ function StripeElementsWrap({ clientSecret }: { clientSecret: string }) {
   } as any;
 
   return (
-    <Elements stripe={stripePromise} options={{ clientSecret, appearance }}>
-      <PaymentElementHost />
+    <Elements
+      stripe={stripePromise}
+      options={{ clientSecret, appearance }}
+    >
+      <PaymentElementHost billing={billing} />
     </Elements>
   );
 }
 
-function PaymentElementHost() {
+function PaymentElementHost({
+  billing,
+}: {
+  billing: {
+    name: string;
+    email: string;
+    phone: string | null;
+    address: {
+      line1: string;
+      line2: string | null;
+      city: string;
+      postal_code: string;
+      country: string;
+    };
+  } | null;
+}) {
   const stripe = useStripe();
   const elements = useElements();
   useEffect(() => {
@@ -505,7 +714,12 @@ function PaymentElementHost() {
       if (!stripe || !elements) return { error: "Payment is still loading. Please wait." };
       const { error, paymentIntent } = await stripe.confirmPayment({
         elements,
-        confirmParams: { return_url: window.location.origin + "/checkout" },
+        confirmParams: {
+          return_url: window.location.origin + "/checkout",
+          // Explicit EU billing details — Stripe applies the correct
+          // postal-code rules for the chosen country (DE/EE = 5 digits).
+          ...(billing ? { payment_method_data: { billing_details: billing } } : {}),
+        },
         redirect: "if_required",
       });
       if (error) return { error: error.message };
@@ -514,12 +728,33 @@ function PaymentElementHost() {
     return () => {
       stripeConfirmRef = null;
     };
-  }, [stripe, elements]);
+  }, [stripe, elements, billing]);
   return (
     <div className="mt-4">
       <PaymentElement
         options={{
           layout: "tabs",
+          // We collect the billing address ourselves (with the correct EU
+          // country) — Stripe's own Country/ZIP fields are hidden. Without
+          // this, the Payment Element defaults to US-style ZIP validation
+          // and rejects valid European postal codes.
+          fields: { billingDetails: "never" },
+          ...(billing
+            ? {
+                defaultValues: {
+                  billingDetails: {
+                    name: billing.name,
+                    email: billing.email,
+                    address: {
+                      country: billing.address.country,
+                      postal_code: billing.address.postal_code,
+                      city: billing.address.city,
+                      line1: billing.address.line1,
+                    },
+                  },
+                },
+              }
+            : {}),
         }}
       />
     </div>
