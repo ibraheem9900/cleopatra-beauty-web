@@ -556,6 +556,7 @@ export default function CheckoutPage() {
                           line2: customer.apartment || null,
                           city: customer.city,
                           postal_code: customer.postalCode,
+                          state: "", // DE/EE and most EU countries have no state field
                           country: customer.countryCode,
                         },
                       }}
@@ -639,6 +640,7 @@ function StripeElementsWrap({
       line2: string | null;
       city: string;
       postal_code: string;
+      state: string;
       country: string;
     };
   } | null;
@@ -703,6 +705,7 @@ function PaymentElementHost({
       line2: string | null;
       city: string;
       postal_code: string;
+      state: string;
       country: string;
     };
   } | null;
@@ -712,18 +715,44 @@ function PaymentElementHost({
   useEffect(() => {
     stripeConfirmRef = async () => {
       if (!stripe || !elements) return { error: "Payment is still loading. Please wait." };
-      const { error, paymentIntent } = await stripe.confirmPayment({
-        elements,
-        confirmParams: {
-          return_url: window.location.origin + "/checkout",
-          // Explicit EU billing details — Stripe applies the correct
-          // postal-code rules for the chosen country (DE/EE = 5 digits).
-          ...(billing ? { payment_method_data: { billing_details: billing } } : {}),
+      // With fields.billingDetails "never", Stripe requires the COMPLETE
+      // billing_details object here — every address key present, including
+      // state (empty string is valid for DE/EE where states don't apply).
+      const billing_details = {
+        name: billing?.name || "",
+        email: billing?.email || "",
+        phone: billing?.phone || "",
+        address: {
+          line1: billing?.address.line1 || "",
+          line2: billing?.address.line2 || "",
+          city: billing?.address.city || "",
+          postal_code: billing?.address.postal_code || "",
+          state: billing?.address.state || "",
+          country: billing?.address.country || "DE",
         },
-        redirect: "if_required",
-      });
-      if (error) return { error: error.message };
-      return { paymentIntentId: paymentIntent?.id };
+      };
+      try {
+        const { error, paymentIntent } = await stripe.confirmPayment({
+          elements,
+          confirmParams: {
+            return_url: window.location.origin + "/checkout",
+            // Explicit EU billing details — Stripe applies the correct
+            // postal-code rules for the chosen country (DE/EE = 5 digits).
+            payment_method_data: { billing_details },
+          },
+          redirect: "if_required",
+        });
+        if (error) return { error: error.message };
+        return { paymentIntentId: paymentIntent?.id };
+      } catch (err: any) {
+        // Surface Stripe IntegrationErrors as a friendly message instead of
+        // an unhandled promise rejection.
+        console.error("Stripe confirmPayment failed:", err?.message);
+        return {
+          error:
+            "We could not process the payment. Please check your details and try again, or contact support if the problem persists.",
+        };
+      }
     };
     return () => {
       stripeConfirmRef = null;
@@ -750,6 +779,7 @@ function PaymentElementHost({
                       postal_code: billing.address.postal_code,
                       city: billing.address.city,
                       line1: billing.address.line1,
+                      state: billing.address.state,
                     },
                   },
                 },
