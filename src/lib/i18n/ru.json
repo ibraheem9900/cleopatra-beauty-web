@@ -94,6 +94,8 @@
   "checkout.city": "Город",
   "checkout.postalCode": "Почтовый индекс",
   "checkout.country": "Страна",
+  "checkout.postalInvalid": "Введите действующий почтовый индекс для вашей страны (например, {example})",
+  "checkout.country": "Страна",
   "checkout.shippingMethod": "Способ доставки",
   "checkout.paymentMethod": "Способ оплаты",
   "checkout.reviewOrder": "Проверить заказ",

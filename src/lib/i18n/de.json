@@ -94,6 +94,8 @@
   "checkout.city": "Stadt",
   "checkout.postalCode": "PLZ",
   "checkout.country": "Land",
+  "checkout.postalInvalid": "Bitte geben Sie eine gültige Postleitzahl für Ihr Land ein (z. B. {example})",
+  "checkout.country": "Land",
   "checkout.shippingMethod": "Versandart",
   "checkout.paymentMethod": "Zahlungsart",
   "checkout.reviewOrder": "Bestellung prüfen",
