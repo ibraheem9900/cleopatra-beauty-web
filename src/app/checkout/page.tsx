@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";
@@ -67,6 +67,16 @@ export default function CheckoutPage() {
   const [placing, setPlacing] = useState(false);
   const [placeError, setPlaceError] = useState<string | null>(null);
 
+  // One order reference shared by the PaymentIntent metadata and the order
+  // record, so the Stripe webhook can match the payment to the order.
+  const orderRefRef = useRef<string | null>(null);
+  const getOrderRef = () => {
+    if (!orderRefRef.current) {
+      orderRefRef.current = `CP-${Date.now().toString(36).toUpperCase()}`;
+    }
+    return orderRefRef.current;
+  };
+
   const subtotal = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
   const [selectedShipping, setSelectedShipping] = useState(shippingMethods[0].id);
   const [selectedPayment, setSelectedPayment] = useState(paymentMethods[0].id);
@@ -82,7 +92,7 @@ export default function CheckoutPage() {
         body: JSON.stringify({
           amountCents: Math.round(total * 100),
           currency: "EUR",
-          orderRef: `CP-${Date.now().toString(36).toUpperCase()}`,
+          orderRef: getOrderRef(),
           email: customer.email,
         }),
       })
@@ -97,7 +107,7 @@ export default function CheckoutPage() {
     setPlacing(true);
     setPlaceError(null);
     try {
-      const orderRef = `CP-${Date.now().toString(36).toUpperCase()}`;
+      const orderRef = getOrderRef();
       const res = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -344,29 +354,14 @@ export default function CheckoutPage() {
 
                       {stripeConfig === null ? (
                         <div className="p-4 bg-cream rounded-xl text-sm text-muted">Loading payment methods…</div>
-                      ) : stripeConfig.configured && stripeConfig.clientSecret ? (
-                        <StripeElementsWrap clientSecret={stripeConfig.clientSecret} />
-                      ) : (
+                      ) : !stripeConfig.configured ? (
                         <div className="p-4 rounded-xl border border-amber-200 bg-amber-50 text-sm text-amber-800 flex gap-2">
                           <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
                           <span>
-                            Stripe is not configured yet. This checkout is running in{" "}
-                            <strong>development mode</strong> — no real payment will be charged. Add{" "}
-                            <code className="bg-amber-100 px-1 rounded">STRIPE_SECRET_KEY</code> and{" "}
-                            <code className="bg-amber-100 px-1 rounded">NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY</code>{" "}
-                            to enable real card payments.
+                            Stripe is not configured on this deployment. Add <code className="bg-amber-100 px-1 rounded">STRIPE_SECRET_KEY</code> and <code className="bg-amber-100 px-1 rounded">NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY</code> to Vercel environment variables to enable real card payments.
                           </span>
                         </div>
-                      )}
-
-                      <div className="flex gap-3 pt-4">
-                        <button onClick={() => setStep("shipping")} className="px-6 py-3 border border-warm-beige rounded-full text-sm text-muted hover:text-foreground transition-colors">
-                          {t("common.back")}
-                        </button>
-                        <motion.button whileTap={{ scale: 0.98 }} onClick={() => setStep("confirm")} className="flex-1 py-3 bg-gold hover:bg-gold-light text-foreground font-medium rounded-full transition-all text-sm">
-                          {t("checkout.reviewOrder")}
-                        </motion.button>
-                      </div>
+                      ) : null}
                     </motion.div>
                   )}
 
@@ -384,6 +379,26 @@ export default function CheckoutPage() {
                     />
                   )}
                 </AnimatePresence>
+
+                {/* Stripe Elements — mounted at page level and kept alive across
+                    the payment and review steps so confirmPayment() can run from
+                    "Place Order" with the same Elements instance. */}
+                {stripeConfig?.configured && stripeConfig.clientSecret ? (
+                  <div className={step === "payment" ? "mt-4" : "hidden"}>
+                    <StripeElementsWrap clientSecret={stripeConfig.clientSecret} />
+                  </div>
+                ) : null}
+
+                {step === "payment" && (
+                  <div className="flex gap-3 pt-4">
+                    <button onClick={() => setStep("shipping")} className="px-6 py-3 border border-warm-beige rounded-full text-sm text-muted hover:text-foreground transition-colors">
+                      {t("common.back")}
+                    </button>
+                    <motion.button whileTap={{ scale: 0.98 }} onClick={() => setStep("confirm")} className="flex-1 py-3 bg-gold hover:bg-gold-light text-foreground font-medium rounded-full transition-all text-sm">
+                      {t("checkout.reviewOrder")}
+                    </motion.button>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -440,8 +455,43 @@ function StripeElementsWrap({ clientSecret }: { clientSecret: string }) {
   const [stripePromise] = useState<Promise<Stripe | null>>(() =>
     loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || "")
   );
+
+  // Brand-aligned appearance config for the Stripe card form
+  const appearance = {
+    theme: "stripe" as const,
+    variables: {
+      colorPrimary: "#92651f", // gold brand color
+      colorBackground: "#ffffff",
+      colorText: "#1a1a1a",
+      colorDanger: "#dc2626",
+      fontFamily: "Georgia, 'Times New Roman', serif",
+      spacingUnit: "8px",
+      borderRadius: "12px",
+    },
+    rules: {
+      ".Input": {
+        border: "1px solid #e0d5c1",
+        padding: "14px 16px",
+        fontSize: "15px",
+        boxShadow: "none",
+      },
+      ".Input:focus": {
+        border: "1px solid #92651f",
+        boxShadow: "0 0 0 1px rgba(146, 101, 31, 0.15)",
+      },
+      ".Label": {
+        fontSize: "13px",
+        fontWeight: "500",
+        color: "#666666",
+      },
+      // Note: only selectors officially supported by Stripe's appearance API
+      // are allowed here — unsupported ones (e.g. ".Tab.content.active",
+      // ".Message.error") produce console warnings and are intentionally omitted.
+    },
+  } as any;
+
   return (
-    <Elements stripe={stripePromise} options={{ clientSecret } as any}>
+    <Elements stripe={stripePromise} options={{ clientSecret, appearance }}>
       <PaymentElementHost />
     </Elements>
   );
@@ -465,7 +515,15 @@ function PaymentElementHost() {
       stripeConfirmRef = null;
     };
   }, [stripe, elements]);
-  return <PaymentElement options={{ layout: "tabs" }} />;
+  return (
+    <div className="mt-4">
+      <PaymentElement
+        options={{
+          layout: "tabs",
+        }}
+      />
+    </div>
+  );
 }
 
 // Module-level bridge: the Confirm step triggers Stripe confirmation
@@ -492,7 +550,11 @@ function ConfirmStep({
   const t = useLanguageStore((s) => s.t);
 
   const handlePlace = async () => {
-    if (stripeConfigured && stripeConfirmRef) {
+    if (stripeConfigured) {
+      if (!stripeConfirmRef) {
+        onStripeError("Payment form is still loading. Please go back to the payment step and try again.");
+        return;
+      }
       const result = await stripeConfirmRef();
       if (result.error) {
         onStripeError(result.error);

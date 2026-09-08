@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { flushSync } from "react-dom";
 import { usePathname, useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import LogoLoader from "./LogoLoader";
@@ -31,10 +30,13 @@ export default function PageTransitionLoader() {
   const showLoader = useCallback((target?: string | null) => {
     targetRef.current = target ?? null;
     startTimeRef.current = Date.now();
-    // flushSync forces the overlay into the DOM immediately — without it,
-    // React batches the update inside the router's transition and the loader
-    // only appears after the new page has already started rendering.
-    flushSync(() => setLoading(true));
+    // Defer the state update out of the current call stack. The navigation
+    // click/pushState can execute inside React's transition or
+    // insertion-effect phases, where a synchronous setState (flushSync)
+    // throws "useInsertionEffect must not schedule updates". A microtask
+    // escapes that scope; the update then runs as a normal urgent render
+    // before the next paint, so the loader still appears instantly.
+    queueMicrotask(() => setLoading(true));
     if (failSafeRef.current) window.clearTimeout(failSafeRef.current);
     failSafeRef.current = window.setTimeout(() => setLoading(false), MAX_DISPLAY_MS);
   }, []);
