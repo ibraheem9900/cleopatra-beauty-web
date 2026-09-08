@@ -95,6 +95,8 @@
   "checkout.city": "City",
   "checkout.postalCode": "Postal Code",
   "checkout.country": "Country",
+  "checkout.postalInvalid": "Please enter a valid postal code for your country (e.g. {example})",
+  "checkout.country": "Country",
   "checkout.shippingMethod": "Shipping Method",
   "checkout.paymentMethod": "Payment Method",
   "checkout.reviewOrder": "Review Order",
